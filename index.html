@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TCGP Corpus Lite</title>
+
+<!-- React (no build step needed) -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+	:root {
+		--bg: #121317;
+		--surface: #1a1c22;
+		--surface-2: #20232b;
+		--border: #2b2e37;
+		--text: #e7e8ec;
+		--text-muted: #8b8f9c;
+		--accent: #4fd1c5;
+		--accent-dim: #2e5a56;
+		--warn: #e0a458;
+		--warn-bg: rgba(224, 164, 88, 0.08);
+		--danger: #e0616f;
+		--font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+		--font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	}
+
+	* { box-sizing: border-box; }
+
+	html, body {
+		margin: 0;
+		padding: 0;
+		background: var(--bg);
+		color: var(--text);
+		font-family: var(--font-ui);
+		height: 100%;
+	}
+
+	#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+	.topbar {
+		padding: 20px 24px 16px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg);
+		position: sticky;
+		top: 0;
+		z-index: 20;
+	}
+
+	.topbar h1 {
+		font-size: 15px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		margin: 0 0 2px;
+		color: var(--text);
+	}
+
+	.topbar .subtitle {
+		font-size: 12.5px;
+		color: var(--text-muted);
+		margin: 0 0 14px;
+		font-family: var(--font-mono);
+	}
+
+	.controls {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.search-input {
+		flex: 1;
+		min-width: 220px;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		color: var(--text);
+		padding: 8px 12px;
+		border-radius: 6px;
+		font-size: 13px;
+		font-family: var(--font-mono);
+		outline: none;
+		transition: border-color 0.15s;
+	}
+	.search-input:focus { border-color: var(--accent-dim); }
+	.search-input::placeholder { color: var(--text-muted); }
+
+	.toggle-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		color: var(--text-muted);
+		padding: 7px 12px;
+		border-radius: 6px;
+		font-size: 12.5px;
+		cursor: pointer;
+		user-select: none;
+		white-space: nowrap;
+	}
+	.toggle-chip.active {
+		color: var(--warn);
+		border-color: rgba(224, 164, 88, 0.35);
+		background: var(--warn-bg);
+	}
+	.toggle-chip input { accent-color: var(--warn); }
+
+	.stat {
+		font-size: 12px;
+		color: var(--text-muted);
+		font-family: var(--font-mono);
+		white-space: nowrap;
+	}
+
+	.content { flex: 1; overflow: auto; padding: 0 24px 40px; }
+
+	.state-msg {
+		max-width: 560px;
+		margin: 60px auto;
+		text-align: center;
+		color: var(--text-muted);
+		font-size: 13.5px;
+		line-height: 1.6;
+	}
+	.state-msg code {
+		background: var(--surface);
+		border: 1px solid var(--border);
+		padding: 1px 6px;
+		border-radius: 4px;
+		font-family: var(--font-mono);
+		color: var(--accent);
+	}
+
+	table {
+		border-collapse: separate;
+		border-spacing: 0;
+		width: 100%;
+		font-size: 13px;
+		margin-top: 16px;
+	}
+
+	thead th {
+		position: sticky;
+		top: 0;
+		background: var(--surface-2);
+		z-index: 10;
+		text-align: left;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		font-weight: 600;
+		font-size: 11.5px;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	thead th .lang-name {
+		color: var(--text);
+		font-size: 12.5px;
+		text-transform: none;
+		letter-spacing: 0;
+		display: block;
+		margin-bottom: 5px;
+		font-family: var(--font-mono);
+	}
+
+	.completeness-track {
+		height: 3px;
+		width: 100%;
+		background: var(--border);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+	.completeness-fill {
+		height: 100%;
+		background: var(--accent);
+		border-radius: 2px;
+	}
+	.completeness-fill.incomplete { background: var(--warn); }
+
+	thead th:first-child, tbody td:first-child {
+		position: sticky;
+		left: 0;
+		z-index: 11;
+		background: var(--surface-2);
+		border-right: 1px solid var(--border);
+	}
+	tbody td:first-child { background: #171920; z-index: 5; }
+
+	tbody tr:hover td:first-child { background: #1d1f27; }
+
+	tbody td {
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		vertical-align: top;
+		max-width: 320px;
+	}
+
+	tbody tr:hover td { background: #191b22; }
+	tbody tr:hover td:first-child { background: #1d1f27; }
+
+	.key-cell {
+		font-family: var(--font-mono);
+		color: var(--accent);
+		font-size: 12.5px;
+		white-space: nowrap;
+	}
+
+	.value-cell {
+		font-family: var(--font-mono);
+		color: var(--text);
+		white-space: pre-wrap;
+		word-break: break-word;
+		line-height: 1.5;
+	}
+
+	.value-missing {
+		color: var(--danger);
+		font-family: var(--font-ui);
+		font-size: 12px;
+		font-style: italic;
+		background: rgba(224, 97, 111, 0.06);
+	}
+
+	.row-flagged { background: var(--warn-bg); }
+	.row-flagged td:first-child { background: rgba(224, 164, 88, 0.1); }
+
+	.footer-note {
+		color: var(--text-muted);
+		font-size: 11.5px;
+		font-family: var(--font-mono);
+		padding: 16px 0 0;
+	}
+
+	::-webkit-scrollbar { width: 10px; height: 10px; }
+	::-webkit-scrollbar-track { background: var(--bg); }
+	::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+	::-webkit-scrollbar-thumb:hover { background: #3a3e4a; }
+</style>
+</head>
+
+<body>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+// -----------------------------------------------------------------------
+// Configure the language files to load. Filenames are expected to live
+// in ./locales/<code>.json — edit this list to match what you actually have.
+// -----------------------------------------------------------------------
+const LANGUAGES = [
+	"de_DE", "en_US", "fr_FR", "es_ES", "it_IT",
+	"ja_JP", "ko_KR", "pt_BR", "zh_TW"
+];
+
+function flatten(obj, prefix = "", out = {}) {
+	for (const [k, v] of Object.entries(obj)) {
+		const newKey = prefix ? `${prefix}.${k}` : k;
+		if (v && typeof v === "object" && !Array.isArray(v)) {
+			flatten(v, newKey, out);
+		} else {
+			out[newKey] = Array.isArray(v) ? JSON.stringify(v) : String(v);
+		}
+	}
+	return out;
+}
+
+function useTranslations() {
+	const [state, setState] = useState({ status: "loading", languages: [], rows: [], missingFiles: [] });
+
+	useEffect(() => {
+		let cancelled = false;
+
+		(async () => {
+			const results = await Promise.all(
+				LANGUAGES.map(async (lang) => {
+					try {
+						const res = await fetch(`locales/${lang}.json`, { cache: "no-store" });
+						if (!res.ok) throw new Error(String(res.status));
+						const json = await res.json();
+						return { lang, data: flatten(json), ok: true };
+					} catch (err) {
+						return { lang, data: {}, ok: false };
+					}
+				})
+			);
+
+			if (cancelled) return;
+
+			const found = results.filter((r) => r.ok);
+			const missingFiles = results.filter((r) => !r.ok).map((r) => r.lang);
+
+			if (found.length === 0) {
+				setState({ status: "empty", languages: [], rows: [], missingFiles });
+				return;
+			}
+
+			const languages = found.map((r) => r.lang);
+			const allKeys = new Set();
+			found.forEach((r) => Object.keys(r.data).forEach((k) => allKeys.add(k)));
+
+			const rows = Array.from(allKeys)
+				.sort()
+				.map((key) => {
+					const values = {};
+					found.forEach((r) => {
+						values[r.lang] = r.data[key] !== undefined ? r.data[key] : null;
+					});
+					return { key, values };
+				});
+
+			setState({ status: "ready", languages, rows, missingFiles });
+		})();
+
+		return () => { cancelled = true; };
+	}, []);
+
+	return state;
+}
+
+function CompletenessBar({ lang, rows }) {
+	const total = rows.length || 1;
+	const filled = rows.filter((r) => r.values[lang] !== null && r.values[lang] !== "").length;
+	const pct = Math.round((filled / total) * 100);
+	return (
+		<div>
+			<span className="lang-name">{lang}</span>
+			<div className="completeness-track">
+				<div
+					className={`completeness-fill ${pct < 100 ? "incomplete" : ""}`}
+					style={{ width: `${pct}%` }}
+					title={`${filled}/${total} keys translated`}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function App() {
+	const { status, languages, rows, missingFiles } = useTranslations();
+	const [query, setQuery] = useState("");
+	const [onlyIncomplete, setOnlyIncomplete] = useState(false);
+
+	const filteredRows = useMemo(() => {
+		let r = rows;
+		if (query.trim()) {
+			const q = query.trim().toLowerCase();
+			r = r.filter(
+				(row) =>
+					row.key.toLowerCase().includes(q) ||
+					Object.values(row.values).some((v) => v && String(v).toLowerCase().includes(q))
+			);
+		}
+		if (onlyIncomplete) {
+			r = r.filter((row) => Object.values(row.values).some((v) => v === null || v === ""));
+		}
+		return r;
+	}, [rows, query, onlyIncomplete]);
+
+	const totalMissingCells = useMemo(
+		() => rows.reduce((acc, row) => acc + Object.values(row.values).filter((v) => v === null || v === "").length, 0),
+		[rows]
+	);
+
+	return (
+		<React.Fragment>
+			<div className="topbar">
+				<h1>TCG Pocket Corpus Lite</h1>
+				<p className="subtitle">./locales — {languages.length} languages · {rows.length} keys{totalMissingCells > 0 ? ` · ${totalMissingCells} missing` : ""}</p>
+				{status === "ready" && (
+					<div className="controls">
+						<input
+							className="search-input"
+							type="text"
+							placeholder="Filter by key or value…"
+							value={query}
+							onChange={(e) => setQuery(e.target.value)}
+						/>
+						<label className={`toggle-chip ${onlyIncomplete ? "active" : ""}`}>
+							<input
+								type="checkbox"
+								checked={onlyIncomplete}
+								onChange={(e) => setOnlyIncomplete(e.target.checked)}
+							/>
+							Only incomplete rows
+						</label>
+						<span className="stat">{filteredRows.length} shown</span>
+					</div>
+				)}
+			</div>
+
+			<div className="content">
+				{status === "loading" && <div className="state-msg">Loading translation files…</div>}
+
+				{status === "empty" && (
+					<div className="state-msg">
+						No language files could be loaded from <code>./locales</code>.<br /><br />
+						Make sure your JSON files (e.g. <code>en_US.json</code>) sit in a <code>locales/</code> folder
+						next to <code>index.html</code>, and that you're serving this over HTTP rather than opening
+						it directly as a <code>file://</code> URL (browsers block that fetch). A quick way:<br /><br />
+						<code>npx serve .</code> or <code>python3 -m http.server</code>
+					</div>
+				)}
+
+				{status === "ready" && (
+					<React.Fragment>
+						<table>
+							<thead>
+								<tr>
+									<th>Key</th>
+									{languages.map((lang) => (
+										<th key={lang}><CompletenessBar lang={lang} rows={rows} /></th>
+									))}
+								</tr>
+							</thead>
+							<tbody>
+								{filteredRows.map((row) => {
+									const hasMissing = Object.values(row.values).some((v) => v === null || v === "");
+									return (
+										<tr key={row.key} className={hasMissing ? "row-flagged" : ""}>
+											<td className="key-cell">{row.key}</td>
+											{languages.map((lang) => {
+												const v = row.values[lang];
+												const missing = v === null || v === "";
+												return (
+													<td key={lang} className={missing ? "value-missing" : "value-cell"}>
+														{missing ? "missing" : v}
+													</td>
+												);
+											})}
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+						{missingFiles.length > 0 && (
+							<p className="footer-note">Note: no file found for {missingFiles.join(", ")} — check the LANGUAGES list at the top of index.html.</p>
+						)}
+					</React.Fragment>
+				)}
+			</div>
+		</React.Fragment>
+	);
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
