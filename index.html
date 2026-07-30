@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TCGP Corpus Lite</title>
 
-<!-- React (no build step needed) -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -41,7 +36,7 @@
 		height: 100%;
 	}
 
-	#root { min-height: 100vh; display: flex; flex-direction: column; }
+	#root { height: 100vh; display: flex; flex-direction: column; }
 
 	.topbar {
 		padding: 20px 24px 16px;
@@ -248,11 +243,23 @@
 
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root"></div>
+<div id="root">
+	<div class="topbar">
+		<h1>TCG Pocket Corpus Lite</h1>
+		<p class="subtitle" id="subtitle">Loading…</p>
+		<div class="controls" id="controls" style="display:none;">
+			<input class="search-input" type="text" id="searchInput" placeholder="Filter by key or value…" />
+			<label class="toggle-chip" id="incompleteToggleLabel">
+				<input type="checkbox" id="incompleteToggle" />
+				Only incomplete rows
+			</label>
+			<span class="stat" id="shownStat"></span>
+		</div>
+	</div>
+	<div class="content" id="content"></div>
+</div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useMemo } = React;
-
+<script>
 // -----------------------------------------------------------------------
 // Configure the language files to load. Filenames are expected to live
 // in ./locales/<code>.json — edit this list to match what you actually have.
@@ -274,185 +281,170 @@ function flatten(obj, prefix = "", out = {}) {
 	return out;
 }
 
-function useTranslations() {
-	const [state, setState] = useState({ status: "loading", languages: [], rows: [], missingFiles: [] });
+function escapeHtml(str) {
+	const div = document.createElement("div");
+	div.textContent = str;
+	return div.innerHTML;
+}
 
-	useEffect(() => {
-		let cancelled = false;
+let state = { status: "loading", languages: [], rows: [], missingFiles: [] };
+let query = "";
+let onlyIncomplete = false;
 
-		(async () => {
-			const results = await Promise.all(
-				LANGUAGES.map(async (lang) => {
-					try {
-						const res = await fetch(`locales/${lang}.json`, { cache: "no-store" });
-						if (!res.ok) throw new Error(String(res.status));
-						const json = await res.json();
-						return { lang, data: flatten(json), ok: true };
-					} catch (err) {
-						return { lang, data: {}, ok: false };
-					}
-				})
-			);
-
-			if (cancelled) return;
-
-			const found = results.filter((r) => r.ok);
-			const missingFiles = results.filter((r) => !r.ok).map((r) => r.lang);
-
-			if (found.length === 0) {
-				setState({ status: "empty", languages: [], rows: [], missingFiles });
-				return;
+async function loadTranslations() {
+	const results = await Promise.all(
+		LANGUAGES.map(async (lang) => {
+			try {
+				const res = await fetch(`locales/${lang}.json`, { cache: "no-store" });
+				if (!res.ok) throw new Error(String(res.status));
+				const json = await res.json();
+				return { lang, data: flatten(json), ok: true };
+			} catch (err) {
+				return { lang, data: {}, ok: false };
 			}
-
-			const languages = found.map((r) => r.lang);
-			const allKeys = new Set();
-			found.forEach((r) => Object.keys(r.data).forEach((k) => allKeys.add(k)));
-
-			const rows = Array.from(allKeys)
-				.sort()
-				.map((key) => {
-					const values = {};
-					found.forEach((r) => {
-						values[r.lang] = r.data[key] !== undefined ? r.data[key] : null;
-					});
-					return { key, values };
-				});
-
-			setState({ status: "ready", languages, rows, missingFiles });
-		})();
-
-		return () => { cancelled = true; };
-	}, []);
-
-	return state;
-}
-
-function CompletenessBar({ lang, rows }) {
-	const total = rows.length || 1;
-	const filled = rows.filter((r) => r.values[lang] !== null && r.values[lang] !== "").length;
-	const pct = Math.round((filled / total) * 100);
-	return (
-		<div>
-			<span className="lang-name">{lang}</span>
-			<div className="completeness-track">
-				<div
-					className={`completeness-fill ${pct < 100 ? "incomplete" : ""}`}
-					style={{ width: `${pct}%` }}
-					title={`${filled}/${total} keys translated`}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function App() {
-	const { status, languages, rows, missingFiles } = useTranslations();
-	const [query, setQuery] = useState("");
-	const [onlyIncomplete, setOnlyIncomplete] = useState(false);
-
-	const filteredRows = useMemo(() => {
-		let r = rows;
-		if (query.trim()) {
-			const q = query.trim().toLowerCase();
-			r = r.filter(
-				(row) =>
-					row.key.toLowerCase().includes(q) ||
-					Object.values(row.values).some((v) => v && String(v).toLowerCase().includes(q))
-			);
-		}
-		if (onlyIncomplete) {
-			r = r.filter((row) => Object.values(row.values).some((v) => v === null || v === ""));
-		}
-		return r;
-	}, [rows, query, onlyIncomplete]);
-
-	const totalMissingCells = useMemo(
-		() => rows.reduce((acc, row) => acc + Object.values(row.values).filter((v) => v === null || v === "").length, 0),
-		[rows]
+		})
 	);
 
-	return (
-		<React.Fragment>
-			<div className="topbar">
-				<h1>TCG Pocket Corpus Lite</h1>
-				<p className="subtitle">./locales — {languages.length} languages · {rows.length} keys{totalMissingCells > 0 ? ` · ${totalMissingCells} missing` : ""}</p>
-				{status === "ready" && (
-					<div className="controls">
-						<input
-							className="search-input"
-							type="text"
-							placeholder="Filter by key or value…"
-							value={query}
-							onChange={(e) => setQuery(e.target.value)}
-						/>
-						<label className={`toggle-chip ${onlyIncomplete ? "active" : ""}`}>
-							<input
-								type="checkbox"
-								checked={onlyIncomplete}
-								onChange={(e) => setOnlyIncomplete(e.target.checked)}
-							/>
-							Only incomplete rows
-						</label>
-						<span className="stat">{filteredRows.length} shown</span>
+	const found = results.filter((r) => r.ok);
+	const missingFiles = results.filter((r) => !r.ok).map((r) => r.lang);
+
+	if (found.length === 0) {
+		state = { status: "empty", languages: [], rows: [], missingFiles };
+		render();
+		return;
+	}
+
+	const languages = found.map((r) => r.lang);
+	const allKeys = new Set();
+	found.forEach((r) => Object.keys(r.data).forEach((k) => allKeys.add(k)));
+
+	const rows = Array.from(allKeys)
+		.sort()
+		.map((key) => {
+			const values = {};
+			found.forEach((r) => {
+				values[r.lang] = r.data[key] !== undefined ? r.data[key] : null;
+			});
+			return { key, values };
+		});
+
+	state = { status: "ready", languages, rows, missingFiles };
+	render();
+}
+
+function getFilteredRows() {
+	let r = state.rows;
+	if (query.trim()) {
+		const q = query.trim().toLowerCase();
+		r = r.filter(
+			(row) =>
+				row.key.toLowerCase().includes(q) ||
+				Object.values(row.values).some((v) => v && String(v).toLowerCase().includes(q))
+		);
+	}
+	if (onlyIncomplete) {
+		r = r.filter((row) => Object.values(row.values).some((v) => v === null || v === ""));
+	}
+	return r;
+}
+
+function completenessPct(lang) {
+	const total = state.rows.length || 1;
+	const filled = state.rows.filter((r) => r.values[lang] !== null && r.values[lang] !== "").length;
+	return Math.round((filled / total) * 100);
+}
+
+function render() {
+	const subtitle = document.getElementById("subtitle");
+	const controls = document.getElementById("controls");
+	const content = document.getElementById("content");
+	const shownStat = document.getElementById("shownStat");
+
+	if (state.status === "loading") {
+		subtitle.textContent = "Loading…";
+		controls.style.display = "none";
+		content.innerHTML = `<div class="state-msg">Loading translation files…</div>`;
+		return;
+	}
+
+	if (state.status === "empty") {
+		subtitle.textContent = "./locales — no files loaded";
+		controls.style.display = "none";
+		content.innerHTML = `
+			<div class="state-msg">
+				No language files could be loaded from <code>./locales</code>.<br /><br />
+				Make sure your JSON files (e.g. <code>en_US.json</code>) sit in a <code>locales/</code> folder
+				next to <code>index.html</code>, and that you're serving this over HTTP rather than opening
+				it directly as a <code>file://</code> URL (browsers block that fetch). A quick way:<br /><br />
+				<code>npx serve .</code> or <code>python -m http.server</code>
+			</div>`;
+		return;
+	}
+
+	// status === "ready"
+	const totalMissingCells = state.rows.reduce(
+		(acc, row) => acc + Object.values(row.values).filter((v) => v === null || v === "").length,
+		0
+	);
+	subtitle.textContent = `./locales — ${state.languages.length} languages · ${state.rows.length} keys${totalMissingCells > 0 ? ` · ${totalMissingCells} missing` : ""}`;
+	controls.style.display = "flex";
+
+	const filteredRows = getFilteredRows();
+	shownStat.textContent = `${filteredRows.length} shown`;
+
+	const headerCells = state.languages
+		.map((lang) => {
+			const pct = completenessPct(lang);
+			return `
+				<th>
+					<span class="lang-name">${escapeHtml(lang)}</span>
+					<div class="completeness-track">
+						<div class="completeness-fill ${pct < 100 ? "incomplete" : ""}" style="width:${pct}%" title="${pct}% translated"></div>
 					</div>
-				)}
-			</div>
+				</th>`;
+		})
+		.join("");
 
-			<div className="content">
-				{status === "loading" && <div className="state-msg">Loading translation files…</div>}
+	const bodyRows = filteredRows
+		.map((row) => {
+			const hasMissing = Object.values(row.values).some((v) => v === null || v === "");
+			const cells = state.languages
+				.map((lang) => {
+					const v = row.values[lang];
+					const missing = v === null || v === "";
+					return `<td class="${missing ? "value-missing" : "value-cell"}">${missing ? "missing" : escapeHtml(v)}</td>`;
+				})
+				.join("");
+			return `<tr class="${hasMissing ? "row-flagged" : ""}"><td class="key-cell">${escapeHtml(row.key)}</td>${cells}</tr>`;
+		})
+		.join("");
 
-				{status === "empty" && (
-					<div className="state-msg">
-						No language files could be loaded from <code>./locales</code>.<br /><br />
-						Make sure your JSON files (e.g. <code>en_US.json</code>) sit in a <code>locales/</code> folder
-						next to <code>index.html</code>, and that you're serving this over HTTP rather than opening
-						it directly as a <code>file://</code> URL (browsers block that fetch). A quick way:<br /><br />
-						<code>npx serve .</code> or <code>python3 -m http.server</code>
-					</div>
-				)}
+	const missingFilesNote =
+		state.missingFiles.length > 0
+			? `<p class="footer-note">Note: no file found for ${escapeHtml(state.missingFiles.join(", "))} — check the LANGUAGES list at the top of index.html.</p>`
+			: "";
 
-				{status === "ready" && (
-					<React.Fragment>
-						<table>
-							<thead>
-								<tr>
-									<th>Key</th>
-									{languages.map((lang) => (
-										<th key={lang}><CompletenessBar lang={lang} rows={rows} /></th>
-									))}
-								</tr>
-							</thead>
-							<tbody>
-								{filteredRows.map((row) => {
-									const hasMissing = Object.values(row.values).some((v) => v === null || v === "");
-									return (
-										<tr key={row.key} className={hasMissing ? "row-flagged" : ""}>
-											<td className="key-cell">{row.key}</td>
-											{languages.map((lang) => {
-												const v = row.values[lang];
-												const missing = v === null || v === "";
-												return (
-													<td key={lang} className={missing ? "value-missing" : "value-cell"}>
-														{missing ? "missing" : v}
-													</td>
-												);
-											})}
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-						{missingFiles.length > 0 && (
-							<p className="footer-note">Note: no file found for {missingFiles.join(", ")} — check the LANGUAGES list at the top of index.html.</p>
-						)}
-					</React.Fragment>
-				)}
-			</div>
-		</React.Fragment>
-	);
+	content.innerHTML = `
+		<table>
+			<thead><tr><th>Key</th>${headerCells}</tr></thead>
+			<tbody>${bodyRows}</tbody>
+		</table>
+		${missingFilesNote}
+	`;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+document.getElementById("searchInput").addEventListener("input", (e) => {
+	query = e.target.value;
+	render();
+});
+
+document.getElementById("incompleteToggle").addEventListener("change", (e) => {
+	onlyIncomplete = e.target.checked;
+	document.getElementById("incompleteToggleLabel").classList.toggle("active", onlyIncomplete);
+	render();
+});
+
+loadTranslations();
 </script>
 </body>
 </html>
