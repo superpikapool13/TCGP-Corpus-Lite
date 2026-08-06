@@ -1,0 +1,10 @@
+# ai.txt — AI training data opt-out signal
+# Site: https://superpikapool13.github.io/TCGP-Corpus-Lite/
+
+User-agent: *
+Disallow: /
+Content-Usage: no-ai-training
+
+Policy: https://github.com/superpikapool13/TCGP-Corpus-Lite/blob/main/NOAI.md
+License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Contact: https://github.com/superpikapool13/TCGP-Corpus-Lite/

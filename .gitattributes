@@ -1,0 +1,14 @@
+# Normalize text files to LF, regardless of OS
+* text=auto eol=lf
+
+# Never let Git touch these as text 
+# (prevents corruption on Windows, where 
+# autocrlf can otherwise mangle binary files)
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+
+# SVG is XML text — keep it as text, but still LF-normalized
+*.svg text eol=lf
