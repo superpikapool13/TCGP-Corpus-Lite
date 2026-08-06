@@ -274,14 +274,14 @@
 </div>
 
 <script>
-// // -----------------------------------------------------------------------
-// // Configure the language files to load. Filenames are expected to live
-// // in ./locales/<code>.json — edit this list to match what you actually have.
-// // -----------------------------------------------------------------------
-// const LANGUAGES = [
-// 	"de_DE", "en_US", "fr_FR", "es_ES", "it_IT",
-// 	"ja_JP", "ko_KR", "pt_BR", "zh_TW"
-// ];
+// -----------------------------------------------------------------------
+// Configure the language files to load. Filenames are expected to live
+// in ./locales/<code>.json — edit this list to match what you actually have.
+// -----------------------------------------------------------------------
+const LANGUAGES = [
+	"de_DE", "en_US", "fr_FR", "es_ES", "it_IT",
+	"ja_JP", "ko_KR", "pt_BR", "zh_TW"
+];
 
 function flatten(obj, prefix = "", out = {}) {
 	for (const [k, v] of Object.entries(obj)) {
@@ -301,54 +301,21 @@ function escapeHtml(str) {
 	return div.innerHTML;
 }
 
-function deepMergeInto(target, source) {
-	for (const [k, v] of Object.entries(source)) {
-		if (v && typeof v === "object" && !Array.isArray(v) && target[k] && typeof target[k] === "object") {
-			deepMergeInto(target[k], v);
-		} else {
-			target[k] = v;
-		}
-	}
-	return target;
-}
-
 let state = { status: "loading", languages: [], rows: [], missingFiles: [] };
 let query = "";
 let onlyIncomplete = false;
 
 async function loadTranslations() {
-	let manifest;
-	try {
-		const res = await fetch("locales/manifest.json", { cache: "no-store" });
-		if (!res.ok) throw new Error(String(res.status));
-		manifest = await res.json();
-	} catch (err) {
-		state = { status: "empty", languages: [], rows: [], missingFiles: [] };
-		render();
-		return;
-	}
-
-	const langCodes = Object.keys(manifest).sort();
-
 	const results = await Promise.all(
-		langCodes.map(async (lang) => {
-			const filenames = manifest[lang] || [];
-			const merged = {};
-			let loadedAny = false;
-
-			for (const filename of filenames) {
-				try {
-					const res = await fetch(`locales/${lang}/${filename}`, { cache: "no-store" });
-					if (!res.ok) throw new Error(String(res.status));
-					const json = await res.json();
-					deepMergeInto(merged, json);
-					loadedAny = true;
-				} catch (err) {
-					// this specific file failed — keep merging whatever else loaded
-				}
+		LANGUAGES.map(async (lang) => {
+			try {
+				const res = await fetch(`locales/${lang}.json`, { cache: "no-store" });
+				if (!res.ok) throw new Error(String(res.status));
+				const json = await res.json();
+				return { lang, data: flatten(json), ok: true };
+			} catch (err) {
+				return { lang, data: {}, ok: false };
 			}
-
-			return { lang, data: flatten(merged), ok: loadedAny };
 		})
 	);
 
