@@ -21,7 +21,7 @@ locales/
   ├─pt_BR
   └─zh_TW
 ```
-To change the list of languages, simply edit the `LANGUAGES` array near the top of the script in [`index.html`](../../tree/gh-pages/index.html).
+To change the list of languages, simply edit the `LANGUAGES` array near the top of the script in [`App.js`](../../tree/main/app.js#L5).
 
 ## Running the comparison tool locally
 
