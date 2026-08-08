@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page not found — TCGP Corpus Lite</title>
+
+<meta name="robots" content="noindex, follow">
+<meta name="description" content="A small tool for comparing translation strings from Pokémon TCG Pocket">
+
+<meta property="og:title" content="Page not found — TCGP Corpus Lite">
+<meta property="og:description" content="A small tool for comparing translation strings from Pokémon TCG Pocket">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://superpikapool13.github.io/TCGP-Corpus-Lite/">
+<meta property="og:image" content="https://superpikapool13.github.io/TCGP-Corpus-Lite/og-image.png">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Page not found — TCGP Corpus Lite">
+<meta name="twitter:description" content="A small tool for comparing translation strings from Pokémon TCG Pocket">
+<meta name="twitter:image" content="https://superpikapool13.github.io/TCGP-Corpus-Lite/og-image.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" type="image/png">
+
+<style>
+  :root {
+    --bg: #121317;
+    --surface: #1a1c22;
+    --surface-2: #20232b;
+    --border: #2b2e37;
+    --text: #e7e8ec;
+    --text-muted: #8b8f9c;
+    --accent: #4fd1c5;
+    --danger: #e0616f;
+    --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .wrap {
+    max-width: 480px;
+    width: 100%;
+    animation: fade-in 0.4s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wrap { animation: none; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    /* font-size: 12.5px; */
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+
+  p.lede {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin: 0 0 28px;
+  }
+
+  /* Signature element: this app's own "missing value" table row, repurposed as the 404 */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 9px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  tbody td {
+    padding: 12px 14px;
+    background: #171920;
+    vertical-align: top;
+  }
+
+  .key-cell {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 12.5px;
+    white-space: nowrap;
+    width: 40%;
+    border-right: 1px solid var(--border);
+  }
+
+  .value-missing {
+    color: var(--danger);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-style: italic;
+    background: rgba(224, 97, 111, 0.06);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .back-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- <p class="eyebrow">error / route.not_found</p> -->
+    <h1 class="eyebrow">error / route.not_found</h1>
+    <!-- <h1>This page hasn't shipped in any language.</h1> -->
+    <!-- <p class="lede">The URL you followed doesn't match anything in this project — checked against every locale, still nothing.</p> -->
+
+    <table>
+      <thead>
+        <tr><th>Key</th><th>en_US</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="key-cell">requested_page</td>
+          <td class="value-missing">missing</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <a class="back-link" href="index.html">&larr; Back to the comparison table</a>
+  </div>
+</body>
+</html>
